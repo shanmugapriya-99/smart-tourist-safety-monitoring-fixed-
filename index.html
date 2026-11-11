@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'><path d='M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z'/></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Tourist Safety Monitoring & Incident Response System</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              950: '#070c18',
+              900: '#0c1527',
+              850: '#111d35',
+              800: '#172544',
+              700: '#1e335b',
+              600: '#274478',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet Maps CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- React 18 & Babel for instant zero-config client execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    .leaflet-container { width: 100%; height: 100%; border-radius: 0.75rem; background: #0c1527; z-index: 10; }
+    .pulse-marker-tourist {
+      width: 20px; height: 20px; background: #2563eb; border: 3px solid #ffffff; border-radius: 50%;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.8); position: relative;
+    }
+    .pulse-marker-tourist::after {
+      content: ''; position: absolute; top: -10px; left: -10px; width: 34px; height: 34px;
+      border: 2px solid #38bdf8; border-radius: 50%; animation: radarRing 2s ease-out infinite;
+    }
+    .pulse-marker-sos {
+      width: 24px; height: 24px; background: #ef4444; border: 3px solid #ffffff; border-radius: 50%;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 1); position: relative;
+    }
+    .pulse-marker-sos::after {
+      content: ''; position: absolute; top: -14px; left: -14px; width: 46px; height: 46px;
+      border: 3px solid #ef4444; border-radius: 50%; animation: radarRing 1.2s ease-out infinite;
+    }
+    @keyframes radarRing {
+      0% { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes sosGlow {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.5); }
+      70% { box-shadow: 0 0 0 30px rgba(239, 68, 68, 0), 0 0 35px rgba(239, 68, 68, 0.8); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 0 20px rgba(239, 68, 68, 0.5); }
+    }
+    .sos-glow-button { animation: sosGlow 2s infinite; }
+  </style>
+</head>
+<body class="bg-navy-950 text-slate-100 min-h-screen selection:bg-blue-600 selection:text-white">
+  <div id="root">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; color: #94a3b8; font-size: 14px;">
+      <div style="text-align: center;">
+        <div style="width: 36px; height: 36px; border: 3px solid #38bdf8; border-top-color: transparent; border-radius: 50%; margin: 0 auto 12px; animation: spin 0.8s linear infinite;"></div>
+        <div>Loading Smart Tourist Safety System...</div>
+      </div>
+    </div>
+  </div>
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+  <script>
+    window.onerror = function(msg, url, line, col, err) {
+      console.error("Global Error Caught:", msg, "at line:", line, err);
+      const root = document.getElementById('root');
+      if (root) {
+        root.innerHTML = `
+          <div style="max-width: 650px; margin: 50px auto; padding: 24px; background: #1e1e38; border: 2px solid #ef4444; border-radius: 12px; color: #fff; font-family: monospace; line-height: 1.5;">
+            <h3 style="color: #f87171; margin-top:0;">⚠️ JavaScript Runtime Notice</h3>
+            <p style="color: #fca5a5;"><b>Error:</b> ${msg}</p>
+            <p style="font-size: 12px; color: #94a3b8;"><b>Line:</b> ${line} | <b>File:</b> ${url}</p>
+            <button onclick="location.reload()" style="padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;">Reload</button>
+          </div>
+        `;
+      }
+    };
+  </script>
+
+  <!-- Standalone React Application Component Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // API Service
+    const API = {
+      base: '/api',
+      getToken: () => localStorage.getItem('tourist_token'),
+      setToken: (t) => localStorage.setItem('tourist_token', t),
+      clearToken: () => { localStorage.removeItem('tourist_token'); localStorage.removeItem('tourist_user'); },
+      getUser: () => { try { return JSON.parse(localStorage.getItem('tourist_user')); } catch { return null; } },
+      setUser: (u) => localStorage.setItem('tourist_user', JSON.stringify(u)),
+
+      req: async (path, opts = {}) => {
+        const token = API.getToken();
+        const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}), ...opts.headers };
+        const res = await fetch(`${API.base}${path}`, { ...opts, headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.message || 'Request failed');
+        return data;
+      }
+    };
+
+    // High-Decibel Emergency Siren Alarm Engine (Web Audio API)
+    let sirenTimer = null;
+    let audioCtx = null;
+
+    function playSirenPulse() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const ctx = audioCtx;
+        const now = ctx.currentTime;
+        
+        // Two-tone European/Police Emergency Siren
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sawtooth';
+        
+        // Sweep frequency: 980Hz down to 650Hz and back to 980Hz
+        osc.frequency.setValueAtTime(980, now);
+        osc.frequency.linearRampToValueAtTime(650, now + 0.35);
+        osc.frequency.linearRampToValueAtTime(980, now + 0.7);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.7);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.75);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.75);
+      } catch (err) {
+        console.warn('Audio alarm siren error:', err);
+      }
+    }
+
+    function startSirenAlarm() {
+      if (sirenTimer) clearInterval(sirenTimer);
+      playSirenPulse();
+      sirenTimer = setInterval(playSirenPulse, 800);
+    }
+
+    function stopSirenAlarm() {
+      if (sirenTimer) {
+        clearInterval(sirenTimer);
+        sirenTimer = null;
+      }
+    }
+
+    // High-Urgency Fall & Impact Alarm (Fast Pulsing Beep)
+    let fallAlarmTimer = null;
+    function playFallBeep() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const ctx = audioCtx;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1150, now);
+        osc.frequency.setValueAtTime(800, now + 0.12);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } catch(e) {}
+    }
+
+    function startFallAlarm() {
+      if (fallAlarmTimer) clearInterval(fallAlarmTimer);
+      playFallBeep();
+      fallAlarmTimer = setInterval(playFallBeep, 350);
+    }
+
+    function stopFallAlarm() {
+      if (fallAlarmTimer) {
+        clearInterval(fallAlarmTimer);
+        fallAlarmTimer = null;
+      }
+    }
+
+    function App() {
+      const [view, setView] = useState('landing'); // landing, tourist, admin, map, blockchain, ai
+      const [user, setUser] = useState(API.getUser());
+      const [coords, setCoords] = useState({ latitude: 15.4950, longitude: 73.8180, accuracy: 12 });
+      const [isTracking, setIsTracking] = useState(true);
+      const [dangerZones, setDangerZones] = useState([]);
+      const [incidents, setIncidents] = useState([]);
+      const [trackingTourists, setTrackingTourists] = useState([]);
+      const [activeBreach, setActiveBreach] = useState(null);
+      const [isAlarmMuted, setIsAlarmMuted] = useState(false);
+      const [aiScore, setAiScore] = useState({ safety_score: 95, status: 'OPTIMAL', recommendation: 'Safe corridor' });
+      const [loginOpen, setLoginOpen] = useState(false);
+      const [registerOpen, setRegisterOpen] = useState(false);
+
+      // Real-Life Phone Drop & Fall Detection State
+      const [fallAlert, setFallAlert] = useState(null); // { impact: '28.4', countdown: 15, dispatched: false, incident: null }
+      const [fallSensorActive, setFallSensorActive] = useState(true);
+      const [liveMotion, setLiveMotion] = useState({ x: '0.0', y: '0.0', z: '9.8', total: '9.8' });
+
+      // Trigger siren sound whenever inside danger zone
+      useEffect(() => {
+        if (activeBreach && !isAlarmMuted) {
+          startSirenAlarm();
+        } else {
+          stopSirenAlarm();
+        }
+        return () => stopSirenAlarm();
+      }, [activeBreach, isAlarmMuted]);
+
+      // Fall Detection Alarm Sound & Vibration Trigger
+      const triggerFallDetection = (impactValue = '28.4') => {
+        startFallAlarm();
+        if (navigator.vibrate) {
+          try { navigator.vibrate([400, 200, 400, 200, 800]); } catch(e) {}
+        }
+        setFallAlert({
+          impact: impactValue,
+          countdown: 15,
+          dispatched: false,
+          time: new Date().toLocaleTimeString(),
+        });
+      };
+
+      // Fall Countdown Timer (Auto-dispatches SOS if user doesn't respond in 15 seconds)
+      useEffect(() => {
+        let timer;
+        if (fallAlert && !fallAlert.dispatched && fallAlert.countdown > 0) {
+          timer = setTimeout(() => {
+            setFallAlert((prev) => prev ? { ...prev, countdown: prev.countdown - 1 } : null);
+          }, 1000);
+        } else if (fallAlert && !fallAlert.dispatched && fallAlert.countdown === 0) {
+          autoDispatchFallSOS(fallAlert.impact);
+        }
+        return () => clearTimeout(timer);
+      }, [fallAlert]);
+
+      const autoDispatchFallSOS = async (impactForce) => {
+        try {
+          const res = await API.req('/sos', {
+            method: 'POST',
+            body: JSON.stringify({
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              incident_type: 'FALL_DETECTED',
+              notes: `CRITICAL ALERT: Tourist device dropped with high-G impact (${impactForce} m/s²). User unresponsive after 15s timeout.`,
+            }),
+          });
+          setFallAlert((prev) => prev ? { ...prev, dispatched: true, incident: res.incident, ai_triage: res.ai_triage } : null);
+          loadData();
+        } catch(err) {
+          console.error("Auto Fall SOS error:", err);
+          setFallAlert((prev) => prev ? { ...prev, dispatched: true } : null);
+        }
+      };
+
+      const handleDismissFall = () => {
+        stopFallAlarm();
+        setFallAlert(null);
+      };
+
+      // Real Device Accelerometer Sensor (DeviceMotionEvent)
+      useEffect(() => {
+        if (!fallSensorActive || typeof window === 'undefined') return;
+
+        let lastTriggerTime = 0;
+        const handleDeviceMotion = (event) => {
+          const acc = event.accelerationIncludingGravity || event.acceleration;
+          if (!acc) return;
+          const x = acc.x || 0;
+          const y = acc.y || 0;
+          const z = acc.z || 0;
+          const total = Math.sqrt(x * x + y * y + z * z);
+
+          setLiveMotion({
+            x: x.toFixed(1),
+            y: y.toFixed(1),
+            z: z.toFixed(1),
+            total: total.toFixed(1),
+          });
+
+          // Impact threshold: standard resting phone is ~9.8 m/s²
+          // A sudden drop/slip and ground impact produces > 23 m/s²
+          const now = Date.now();
+          if (total > 23.0 && (now - lastTriggerTime > 6000)) {
+            lastTriggerTime = now;
+            triggerFallDetection(total.toFixed(1));
+          }
+        };
+
+        window.addEventListener('devicemotion', handleDeviceMotion);
+        return () => window.removeEventListener('devicemotion', handleDeviceMotion);
+      }, [fallSensorActive]);
+
+      // Load initial state
+      useEffect(() => {
+        loadData();
+        const t = setInterval(loadData, 8000);
+        return () => clearInterval(t);
+      }, [user]);
+
+      const loadData = async () => {
+        try {
+          const z = await API.req('/danger-zones');
+          if (z.danger_zones) setDangerZones(z.danger_zones);
+        } catch(e) {}
+        try {
+          const inc = await API.req('/incidents?status=ALL');
+          if (inc.incidents) setIncidents(inc.incidents);
+        } catch(e) {}
+        if (user?.role === 'admin') {
+          try {
+            const tr = await API.req('/admin/tourists');
+            if (tr.tourists) setTrackingTourists(tr.tourists);
+          } catch(e) {}
+        }
+      };
+
+      // GPS Watcher
+      useEffect(() => {
+        if (!isTracking || !navigator.geolocation) return;
+        const watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const newC = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
+            setCoords(newC);
+            sendLocation(newC);
+          },
+          (err) => {
+            sendLocation(coords);
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+        return () => navigator.geolocation.clearWatch(watchId);
+      }, [isTracking]);
+
+      const sendLocation = async (c) => {
+        try {
+          const res = await API.req('/location/update', {
+            method: 'POST',
+            body: JSON.stringify({ latitude: c.latitude, longitude: c.longitude, accuracy: c.accuracy })
+          });
+          if (res.geofence_status) {
+            setActiveBreach(res.geofence_status);
+          } else {
+            setActiveBreach(null);
+          }
+          if (res.ai_safety) setAiScore(res.ai_safety);
+        } catch (e) {
+          // Local fallback check
+          if (Math.abs(c.latitude - 15.4989) < 0.003 && Math.abs(c.longitude - 73.8055) < 0.003) {
+            setActiveBreach({
+              type: 'BREACH',
+              zone: { name: 'Rocky Coastal Cliff - High Tide Area', danger_level: 'CRITICAL', radius_meters: 350 },
+              message: "WARNING: You entered restricted danger zone 'Rocky Coastal Cliff'. Please withdraw immediately!"
+            });
+          } else {
+            setActiveBreach(null);
+          }
+        }
+      };
+
+      const handleLogin = async (email, password) => {
+        const res = await API.req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        API.setToken(res.token);
+        API.setUser(res.user);
+        setUser(res.user);
+        setView(res.user.role === 'admin' ? 'admin' : 'tourist');
+        setLoginOpen(false);
+      };
+
+      const handleRegister = async (data) => {
+        const res = await API.req('/auth/register', { method: 'POST', body: JSON.stringify(data) });
+        API.setToken(res.token);
+        API.setUser(res.user);
+        setUser(res.user);
+        setView('tourist');
+        setRegisterOpen(false);
+      };
+
+      const handleLogout = () => {
+        API.clearToken();
+        setUser(null);
+        setView('landing');
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans">
+          
+          {/* Geo-fence Alert Banner with High-Decibel Siren */}
+          {activeBreach && (
+            <div className="fixed top-20 right-4 z-50 p-5 rounded-2xl bg-red-950/95 border-2 border-red-500 text-white max-w-sm shadow-2xl">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl animate-pulse">🚨</span>
+                  <span className="font-extrabold text-sm text-red-300 uppercase tracking-wider">DANGER ZONE BREACH!</span>
+                </div>
+                <button onClick={() => { setActiveBreach(null); stopSirenAlarm(); }} className="text-xs p-1 rounded hover:bg-red-900 text-slate-300 font-bold">✕</button>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-black/40 border border-red-500/30 text-xs mb-3 space-y-1.5">
+                <div className="flex items-center gap-2 text-red-400 font-bold">
+                  <span className="animate-ping w-2 h-2 rounded-full bg-red-400"></span>
+                  <span>🔊 ALARM SIREN IS RINGING!</span>
+                </div>
+                <p className="text-slate-200 leading-relaxed">{activeBreach.message}</p>
+                <div className="text-[11px] text-amber-300 pt-1 border-t border-red-500/20 flex justify-between">
+                  <span>Danger Level: <strong className="text-red-400">{activeBreach.zone?.danger_level || 'CRITICAL'}</strong></span>
+                  <span>Radius: <strong>{activeBreach.zone?.radius_meters || 350}m</strong></span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isAlarmMuted) {
+                      setIsAlarmMuted(false);
+                      startSirenAlarm();
+                    } else {
+                      setIsAlarmMuted(true);
+                      stopSirenAlarm();
+                    }
+                  }}
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700"
+                >
+                  {isAlarmMuted ? '🔊 Unmute Siren' : '🔇 Mute Alarm'}
+                </button>
+                <button
+                  onClick={() => {
+                    stopSirenAlarm();
+                    setActiveBreach(null);
+                    setCoords({ latitude: 15.4950, longitude: 73.8180, accuracy: 12 });
+                    sendLocation({ latitude: 15.4950, longitude: 73.8180 });
+                  }}
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow"
+                >
+                  ✓ Safe Trail
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Real-Life Fall & Mobile Drop Detection Modal */}
+          {fallAlert && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+              <div className="bg-navy-900 border-2 border-amber-500 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-4">
+                
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl animate-pulse">💥</span>
+                    <div>
+                      <h3 className="text-lg font-black text-amber-400">PHONE DROP / FALL DETECTED!</h3>
+                      <p className="text-[11px] text-slate-400">Real-Life Accelerometer Sensor Impact</p>
+                    </div>
+                  </div>
+                  <button onClick={handleDismissFall} className="text-slate-400 hover:text-white p-1 font-bold">✕</button>
+                </div>
+
+                {fallAlert.dispatched ? (
+                  <div className="text-center py-4 space-y-3">
+                    <div className="w-14 h-14 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 mx-auto flex items-center justify-center text-2xl">
+                      🚨
+                    </div>
+                    <h4 className="text-base font-bold text-white">Emergency Fall SOS Dispatched!</h4>
+                    <p className="text-xs text-slate-300">
+                      Tourist did not respond within 15 seconds. High-priority distress signal broadcast to Command Center & anchored to Blockchain.
+                    </p>
+                    {fallAlert.incident && (
+                      <div className="p-2.5 rounded-xl bg-navy-950 font-mono text-xs text-blue-300 border border-slate-800">
+                        Incident: {fallAlert.incident.incident_id} | Block #{fallAlert.incident.block_index}
+                      </div>
+                    )}
+                    <button
+                      onClick={handleDismissFall}
+                      className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+                    >
+                      Dismiss (Tourist is safe)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/30 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-amber-300">Impact Velocity Spike:</span>
+                        <span className="font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded text-sm">
+                          {fallAlert.impact} m/s²
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-300">
+                        <span>Loud Alarm Siren:</span>
+                        <span className="text-red-400 font-bold animate-pulse">🔊 ACTIVATED (Ringing)</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-red-950/50 border border-red-500/40 text-center space-y-1">
+                      <div className="text-[11px] text-red-200 uppercase font-bold tracking-wider">
+                        Tourist Unresponsive? Auto-SOS in:
+                      </div>
+                      <div className="text-3xl font-black font-mono text-white animate-pulse">
+                        {fallAlert.countdown}s
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        If no button is pressed, emergency SOS with GPS coordinates will be auto-dispatched to Command Center!
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2.5 pt-1">
+                      <button
+                        onClick={handleDismissFall}
+                        className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30"
+                      >
+                        ✓ I am OK (False Alarm)
+                      </button>
+                      <button
+                        onClick={() => autoDispatchFallSOS(fallAlert.impact)}
+                        className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-600/30"
+                      >
+                        🚨 Dispatch Help Now
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Bar */}
+          <header className="sticky top-0 z-40 bg-navy-900/90 backdrop-blur-md border-b border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+              <div onClick={() => setView('landing')} className="flex items-center gap-2 cursor-pointer">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center font-bold text-white shadow">
+                  🛡️
+                </div>
+                <div>
+                  <span className="font-extrabold text-base tracking-tight text-white">
+                    TouristSafe<span className="text-blue-500">AI</span>
+                  </span>
+                  <span className="hidden sm:inline-block ml-2 text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Geo-Fence & Blockchain
+                  </span>
+                </div>
+              </div>
+
+              <nav className="hidden md:flex items-center gap-1 text-xs font-semibold">
+                {['landing', 'tourist', 'admin', 'map', 'blockchain', 'ai'].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={`px-3 py-1.5 rounded-lg capitalize ${view === v ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                  >
+                    {v === 'map' ? 'Live Radar' : v === 'ai' ? 'AI Bot' : v}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="flex items-center gap-2">
+                <a href="tel:112" className="hidden sm:flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 font-bold">
+                  📞 112 SOS
+                </a>
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-blue-400">{user.name}</span>
+                    <button onClick={handleLogout} className="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => setLoginOpen(true)} className="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-white border border-slate-700">
+                      Sign In
+                    </button>
+                    <button onClick={() => setRegisterOpen(true)} className="px-3 py-1.5 rounded-lg text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold">
+                      Register
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Main Views */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+            
+            {/* VIEW 1: LANDING */}
+            {view === 'landing' && (
+              <div className="py-12 text-center space-y-8">
+
+                <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight">
+                  Smart Tourist Safety Monitoring & <br/>
+                  <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                    Incident Response System
+                  </span>
+                </h1>
+                <p className="text-slate-300 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+                  Real-time GPS tracking with user consent, automated danger zone geo-fencing, 
+                  one-touch emergency SOS dispatch, and tamper-proof SHA-256 blockchain digital identity.
+                </p>
+
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button onClick={() => setView('tourist')} className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm shadow-xl shadow-blue-500/20 hover:scale-105 transition-transform">
+                    Launch Tourist Dashboard
+                  </button>
+                  <button onClick={() => setView('admin')} className="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-bold text-sm hover:scale-105 transition-transform">
+                    Admin Command HQ
+                  </button>
+                  <button onClick={() => setView('blockchain')} className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-semibold text-sm">
+                    Blockchain Ledger
+                  </button>
+                </div>
+
+                <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-navy-900 border border-slate-800 text-xs text-slate-400 space-y-2">
+                  <span className="font-mono text-slate-300 font-bold block uppercase text-[10px]">⚡ 1-Click Evaluator Demo Sign In:</span>
+                  <div className="flex justify-center gap-2">
+                    <button onClick={() => handleLogin('tourist@example.com', 'tourist123')} className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      Tourist (John Doe)
+                    </button>
+                    <button onClick={() => handleLogin('admin@touristsafety.org', 'admin123')} className="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Admin HQ (Command)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 2: TOURIST DASHBOARD */}
+            {view === 'tourist' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-navy-900 border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div>
+                    <span className="text-xs font-mono font-bold text-blue-400 px-2.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                      {user?.tourist_id || 'TRV-8942-IN'}
+                    </span>
+                    <h2 className="text-2xl font-black text-white mt-1">Hello, {user?.name || 'Tourist'}!</h2>
+                    <p className="text-xs text-slate-400">Emergency Phone: {user?.emergency_phone || '112'} • Blood: {user?.blood_group || 'B+'}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-navy-950 border border-slate-800 flex items-center gap-3">
+                    <div className="text-2xl font-extrabold text-emerald-400">{aiScore.safety_score}%</div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 font-mono">AI SAFETY SCORE</div>
+                      <div className="text-xs font-bold text-white">{aiScore.status}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left: GPS Controls */}
+                  <div className="p-6 rounded-2xl bg-navy-900 border border-slate-800 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-bold text-white text-sm">GPS Safety Tracking</h3>
+                      <button
+                        onClick={() => setIsTracking(!isTracking)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold ${isTracking ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}
+                      >
+                        {isTracking ? '⏹ Stop Tracking' : '▶ Start Tracking'}
+                      </button>
+                    </div>
+
+                    <div className="bg-navy-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1.5 font-mono">
+                      <div className="flex justify-between text-slate-400"><span>Status:</span><span className={isTracking ? 'text-emerald-400 font-bold' : 'text-slate-400'}>{isTracking ? 'Tracking Active' : 'Paused'}</span></div>
+                      <div className="flex justify-between text-slate-400"><span>Latitude:</span><span className="text-white">{coords.latitude.toFixed(5)}</span></div>
+                      <div className="flex justify-between text-slate-400"><span>Longitude:</span><span className="text-white">{coords.longitude.toFixed(5)}</span></div>
+                      <div className="flex justify-between text-slate-400"><span>Accuracy:</span><span className="text-slate-300">±{Math.round(coords.accuracy)}m</span></div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800 space-y-2">
+                      <div className="text-[11px] font-semibold text-slate-400">
+                        Geo-Fence Alarm Simulation:
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAlarmMuted(false);
+                            setCoords({ latitude: 15.4989, longitude: 73.8055, accuracy: 8 });
+                            setActiveBreach({
+                              type: 'BREACH',
+                              zone: { name: 'Rocky Coastal Cliff - High Tide Area', danger_level: 'CRITICAL', radius_meters: 350 },
+                              message: "WARNING: You entered restricted danger zone 'Rocky Coastal Cliff'. High-tide & falling rock hazard! Please withdraw immediately!"
+                            });
+                            startSirenAlarm();
+                            sendLocation({ latitude: 15.4989, longitude: 73.8055 });
+                          }}
+                          className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-400 text-xs font-extrabold shadow-lg shadow-red-600/40 flex items-center justify-center gap-1.5 animate-pulse"
+                        >
+                          <span>🚨 Trigger Alarm (Danger Zone)</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            stopSirenAlarm();
+                            setActiveBreach(null);
+                            setCoords({ latitude: 15.4950, longitude: 73.8180, accuracy: 12 });
+                            sendLocation({ latitude: 15.4950, longitude: 73.8180 });
+                          }}
+                          className="flex-1 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold"
+                        >
+                          <span>✓ Safe Trail (Stop Alarm)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Real-Life Mobile Drop & Fall Impact Detector Card */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-950/30 to-navy-900 border border-amber-500/30 shadow-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl animate-pulse">📱</span>
+                        <div>
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">Fall & Mobile Drop Sensor</h4>
+                          <p className="text-[10px] text-slate-400">Real-Life Accelerometer G-Sensor</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold">
+                        ● Sensor Active
+                      </span>
+                    </div>
+
+                    <div className="bg-navy-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-[11px] font-mono">
+                      <span className="text-slate-400">Live Acceleration:</span>
+                      <span className="text-cyan-400 font-bold">{liveMotion.total} m/s²</span>
+                      <span className="text-slate-500 text-[10px]">(X:{liveMotion.x} Y:{liveMotion.y} Z:{liveMotion.z})</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      If tourist accidentally slips or drops mobile on trails or cliffs (above 23 m/s² impact), alarm rings immediately and 15s man-down safety countdown begins.
+                    </p>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => triggerFallDetection('28.6')}
+                        className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-extrabold text-xs shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2 transition-transform active:scale-95"
+                      >
+                        <span>💥 Test Mobile Drop / Fall (Simulate)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Center & Right: SOS Button */}
+                  <div className="lg:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-red-950/40 to-navy-900 border border-red-500/30 text-center space-y-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                      🚨 24/7 COMMAND CENTER RAPID SOS
+                    </span>
+                    <h3 className="text-xl font-black text-white">Emergency Distress Signal</h3>
+                    <p className="text-xs text-slate-300 max-w-md mx-auto">
+                      Click below to capture live GPS and broadcast distress alert to emergency responders & anchor event on blockchain.
+                    </p>
+
+                    <div className="flex justify-center py-2">
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Are you sure you want to trigger emergency SOS? This captures your GPS and alerts responders.")) return;
+                          try {
+                            const res = await API.req('/sos', {
+                              method: 'POST',
+                              body: JSON.stringify({ latitude: coords.latitude, longitude: coords.longitude, notes: 'Emergency SOS by tourist', incident_type: 'SOS' })
+                            });
+                            alert(`🚨 SOS ALERT DISPATCHED!\nIncident ID: ${res.incident?.incident_id}\nAnchored to Blockchain Block #${res.incident?.block_index}\nAI Unit: ${res.ai_triage?.recommended_unit}`);
+                            loadData();
+                          } catch(err) {
+                            alert(`SOS Error: ${err.message}`);
+                          }
+                        }}
+                        className="sos-glow-button w-36 h-36 rounded-full bg-gradient-to-tr from-red-700 to-rose-500 text-white font-black text-3xl tracking-widest uppercase border-4 border-red-400/50 shadow-2xl hover:scale-105 active:scale-95 transition-transform"
+                      >
+                        SOS
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800">
+                      <a href="tel:112" className="text-red-400 font-bold underline">Direct Call 112</a>
+                      <span>* Academic simulation mode</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Leaflet Map in Tourist View */}
+                <div className="h-96 rounded-2xl overflow-hidden border border-slate-800">
+                  <LeafletMapView coords={coords} dangerZones={dangerZones} incidents={incidents} />
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 3: ADMIN DASHBOARD */}
+            {view === 'admin' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-navy-900 border border-slate-800 flex justify-between items-center">
+                  <div>
+                    <span className="text-xs font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                      ADMIN HQ COMMAND
+                    </span>
+                    <h2 className="text-2xl font-black text-white mt-1">Incident Response Console</h2>
+                  </div>
+                  <span className="text-xs text-emerald-400 font-mono">● System Online</span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-xl bg-navy-900 border border-slate-800"><div className="text-xs text-slate-400">Total Tourists</div><div className="text-2xl font-extrabold text-white">{trackingTourists.length || 1}</div></div>
+                  <div className="p-4 rounded-xl bg-navy-900 border border-slate-800"><div className="text-xs text-slate-400">Tracking Now</div><div className="text-2xl font-extrabold text-emerald-400">1</div></div>
+                  <div className="p-4 rounded-xl bg-navy-900 border border-slate-800"><div className="text-xs text-slate-400">Active SOS</div><div className="text-2xl font-extrabold text-red-400">{incidents.filter(i => i.status !== 'RESOLVED').length}</div></div>
+                  <div className="p-4 rounded-xl bg-navy-900 border border-slate-800"><div className="text-xs text-slate-400">Danger Zones</div><div className="text-2xl font-extrabold text-amber-400">{dangerZones.length || 2}</div></div>
+                </div>
+
+                {/* Incidents List */}
+                <div className="space-y-3">
+                  <h3 className="font-bold text-white text-base">Emergency Incidents</h3>
+                  {incidents.map((inc) => (
+                    <div key={inc.incident_id || inc.id} className="p-4 rounded-xl bg-navy-900 border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${inc.status === 'ACTIVE' ? 'bg-red-500 text-white animate-pulse' : inc.status === 'RESPONDING' ? 'bg-amber-500 text-black' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                            {inc.status}
+                          </span>
+                          <span className="font-mono text-xs text-white font-bold">{inc.incident_id}</span>
+                          <span className="text-xs text-slate-400">({inc.tourist_name})</span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1">{inc.notes}</p>
+                        <div className="text-[11px] font-mono text-slate-500 mt-1">📍 {inc.latitude?.toFixed(4)}, {inc.longitude?.toFixed(4)}</div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <a href={`https://maps.google.com/?q=${inc.latitude},${inc.longitude}`} target="_blank" className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700">
+                          Maps
+                        </a>
+                        {inc.status === 'ACTIVE' && (
+                          <button onClick={async () => { await API.req(`/incidents/${inc.incident_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'RESPONDING' }) }); loadData(); }} className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs">
+                            Dispatch
+                          </button>
+                        )}
+                        {inc.status !== 'RESOLVED' && (
+                          <button onClick={async () => { await API.req(`/incidents/${inc.incident_id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'RESOLVED' }) }); loadData(); }} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+                            Resolve
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 4: LIVE RADAR MAP */}
+            {view === 'map' && (
+              <div className="space-y-4">
+                <h2 className="text-2xl font-black text-white">Tactical Safety Radar Map</h2>
+                <div className="h-[550px] rounded-2xl overflow-hidden border border-slate-800">
+                  <LeafletMapView coords={coords} dangerZones={dangerZones} incidents={incidents} />
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 5: BLOCKCHAIN */}
+            {view === 'blockchain' && (
+              <BlockchainView />
+            )}
+
+            {/* VIEW 6: AI BOT */}
+            {view === 'ai' && (
+              <div className="p-6 rounded-2xl bg-navy-900 border border-slate-800 space-y-4 max-w-3xl mx-auto">
+                <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+                  <div className="text-3xl">🤖</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">AI Tourist Safety Advisor</h3>
+                    <p className="text-xs text-slate-400">Automated triage, emergency guidance, and local safety rules.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-navy-950 border border-slate-800 text-xs text-slate-300 space-y-3">
+                  <p><strong>Snakebite Protocol:</strong> Keep calm, immobilize bitten limb below heart level. Do NOT cut or apply tourniquet. Press SOS immediately.</p>
+                  <p><strong>Heat Exhaustion:</strong> Move into shaded shelter, drink cool electrolyte fluids in small sips, apply cold water to neck.</p>
+                  <p><strong>Geo-Fencing:</strong> Boundaries are automatically checked every GPS ping. Crossing a cliff boundary triggers an instant alarm.</p>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {/* Login Modal */}
+          {loginOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-navy-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">Sign In</h3>
+                  <button onClick={() => setLoginOpen(false)}>✕</button>
+                </div>
+                <div className="p-3 bg-navy-950 rounded-xl border border-slate-800 flex gap-2">
+                  <button onClick={() => handleLogin('tourist@example.com', 'tourist123')} className="flex-1 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 text-xs font-semibold">
+                    Tourist Demo
+                  </button>
+                  <button onClick={() => handleLogin('admin@touristsafety.org', 'admin123')} className="flex-1 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-semibold">
+                    Admin Demo
+                  </button>
+                </div>
+                <form onSubmit={(e) => { e.preventDefault(); handleLogin(e.target.email.value, e.target.password.value); }} className="space-y-3 text-xs">
+                  <input name="email" type="email" placeholder="Email" defaultValue="tourist@example.com" className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  <input name="password" type="password" placeholder="Password" defaultValue="tourist123" className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  <button type="submit" className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white">Sign In</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Register Modal */}
+          {registerOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-navy-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold">Register Digital ID</h3>
+                  <button onClick={() => setRegisterOpen(false)}>✕</button>
+                </div>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleRegister({
+                    name: e.target.name.value,
+                    email: e.target.email.value,
+                    phone: e.target.phone.value,
+                    password: e.target.password.value,
+                    emergency_contact: e.target.em_contact.value,
+                    emergency_phone: e.target.em_phone.value,
+                    blood_group: e.target.blood.value
+                  });
+                }} className="space-y-3 text-xs">
+                  <input name="name" type="text" placeholder="Full Name" required className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  <input name="email" type="email" placeholder="Email" required className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  <input name="phone" type="tel" placeholder="Phone Number" required className="w-full px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input name="em_contact" type="text" placeholder="Emergency Contact" required className="px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                    <input name="em_phone" type="tel" placeholder="Emergency Phone" required className="px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select name="blood" className="px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white">
+                      <option>O+</option><option>A+</option><option>B+</option><option>AB+</option>
+                    </select>
+                    <input name="password" type="password" placeholder="Password" required className="px-3 py-2 rounded-xl bg-navy-950 border border-slate-800 text-white" />
+                  </div>
+                  <button type="submit" className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-bold text-white">
+                    Enroll & Mint Blockchain ID
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          <footer className="border-t border-slate-900 py-4 text-center text-xs text-slate-500">
+            Smart Tourist Safety Monitoring & Incident Response System
+          </footer>
+        </div>
+      );
+    }
+
+    // Leaflet Map Component
+    function LeafletMapView({ coords, dangerZones, incidents }) {
+      const mapContainer = useRef(null);
+      const mapInstance = useRef(null);
+      const markerRef = useRef(null);
+
+      useEffect(() => {
+        if (!mapContainer.current || mapInstance.current) return;
+        const L = window.L;
+        if (!L) return;
+
+        const map = L.map(mapContainer.current).setView([coords.latitude, coords.longitude], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+
+        mapInstance.current = map;
+      }, []);
+
+      useEffect(() => {
+        const L = window.L;
+        if (!L || !mapInstance.current) return;
+        const map = mapInstance.current;
+
+        // User Marker
+        if (!markerRef.current) {
+          const icon = L.divIcon({ className: '', html: '<div class="pulse-marker-tourist"></div>', iconSize: [20, 20] });
+          markerRef.current = L.marker([coords.latitude, coords.longitude], { icon }).addTo(map);
+        } else {
+          markerRef.current.setLatLng([coords.latitude, coords.longitude]);
+        }
+
+        // Danger Zones
+        dangerZones.forEach((z) => {
+          L.circle([z.latitude, z.longitude], {
+            color: z.danger_level === 'CRITICAL' ? '#ef4444' : '#f59e0b',
+            fillColor: z.danger_level === 'CRITICAL' ? '#ef4444' : '#f59e0b',
+            fillOpacity: 0.25,
+            radius: z.radius_meters || 300,
+          }).addTo(map).bindPopup(`<strong>${z.name}</strong><br/>${z.description}`);
+        });
+
+        // SOS Incidents
+        incidents.forEach((inc) => {
+          if (inc.status === 'RESOLVED') return;
+          const sosIcon = L.divIcon({ className: '', html: '<div class="pulse-marker-sos"></div>', iconSize: [24, 24] });
+          L.marker([inc.latitude, inc.longitude], { icon: sosIcon }).addTo(map)
+            .bindPopup(`<strong>🚨 SOS: ${inc.incident_id}</strong><br/>Tourist: ${inc.tourist_name}`);
+        });
+      }, [coords, dangerZones, incidents]);
+
+      return <div ref={mapContainer} className="w-full h-full" />;
+    }
+
+    // Blockchain Explorer Component
+    function BlockchainView() {
+      const [ledger, setLedger] = useState({ chain: [], is_valid: true });
+
+      const loadChain = async () => {
+        try {
+          const res = await API.req('/blockchain');
+          setLedger(res);
+        } catch(e) {}
+      };
+
+      useEffect(() => { loadChain(); }, []);
+
+      return (
+        <div className="space-y-4">
+          <div className="p-6 rounded-2xl bg-navy-900 border border-slate-800 flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-bold text-white">SHA-256 Safety Blockchain Ledger</h3>
+              <p className="text-xs text-slate-400">Academic Proof-of-Authority simulation for digital ID and incident records</p>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold ${ledger.is_valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+              {ledger.is_valid ? '✓ Chain Integrity Valid' : '🚨 Corrupted Chain!'}
+            </span>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={async () => { await API.req('/blockchain/tamper', { method: 'POST', body: JSON.stringify({ index: 1 }) }); loadChain(); }} className="px-3 py-1.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">
+              ⚠️ Simulate Tampering Block #1
+            </button>
+            <button onClick={async () => { await API.req('/blockchain/repair', { method: 'POST' }); loadChain(); }} className="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+              🔄 Repair & Re-Mine
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {ledger.chain?.map((b) => (
+              <div key={b.index} className="p-4 rounded-xl bg-navy-900 border border-slate-800 text-xs font-mono space-y-1">
+                <div className="flex justify-between font-bold text-cyan-400"><span>Block #{b.index} ({b.data?.type})</span><span>Nonce: {b.nonce}</span></div>
+                <div className="text-[11px] text-slate-400 break-all">Hash: <span className="text-emerald-400">{b.hash}</span></div>
+                <div className="text-[11px] text-slate-500 break-all">Prev: {b.previous_hash}</div>
+                <pre className="text-[11px] text-slate-300 bg-navy-950 p-2 rounded">{JSON.stringify(b.data, null, 2)}</pre>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

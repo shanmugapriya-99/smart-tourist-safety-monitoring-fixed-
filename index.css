@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet Container Styling */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  z-index: 10;
+  background-color: #0c1527;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0c1527;
+}
+::-webkit-scrollbar-thumb {
+  background: #274478;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* Custom Leaflet Map Markers */
+.pulse-marker-tourist {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  background: #2563eb;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.8);
+}
+.pulse-marker-tourist::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #38bdf8;
+  border-radius: 50%;
+  animation: radar 2s ease-out infinite;
+}
+
+.pulse-marker-sos {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  background: #ef4444;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 1);
+  animation: bounceGentle 1.5s infinite;
+}
+.pulse-marker-sos::after {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: 50px;
+  height: 50px;
+  border: 3px solid #ef4444;
+  border-radius: 50%;
+  animation: radar 1.2s ease-out infinite;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(17, 29, 53, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-glow {
+  background: rgba(17, 29, 53, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 25px -5px rgba(37, 99, 235, 0.15);
+}
+
+/* SOS Giant Button Ripple Animation */
+@keyframes sosGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 0 20px rgba(239, 68, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 35px rgba(239, 68, 68, 0), 0 0 40px rgba(239, 68, 68, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 0 20px rgba(239, 68, 68, 0.5);
+  }
+}
+
+.sos-glow-button {
+  animation: sosGlow 2s infinite;
+}
